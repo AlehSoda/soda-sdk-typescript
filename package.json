@@ -1,0 +1,70 @@
+{
+  "type": "module",
+  "browser": {
+    "./lib.esm/crypto/crypto.js": "./lib.esm/crypto/crypto-browser.js"
+  },
+  "dependencies": {
+    "ethers": "^6.13.1"
+  },
+  "description": "An SDK for interacting with gcEMV blockchain",
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "15.0.2",
+    "@types/crypto-js": "^4.2.2",
+    "@types/mocha": "9.1.1",
+    "c8": "7.12.0",
+    "crypto-js": "^4.2.0",
+    "mocha": "10.0.0",
+    "rollup": "3.21.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": "./lib.esm/index.js",
+      "default": "./lib.commonjs/index.js"
+    },
+    "./crypto": {
+      "import": "./lib.esm/crypto/index.js",
+      "default": "./lib.commonjs/crypto/index.js"
+    }
+  },
+  "homepage": "https://sodalabs.xyz",
+  "keywords": [
+    "ethereum",
+    "gcEVM",
+    "soda-sdk"
+  ],
+  "license": "MIT",
+  "main": "./lib.commonjs/index.js",
+  "module": "./lib.esm/index.js",
+  "name": "soda-sdk",
+  "publishConfig": {
+    "access": "public",
+    "tag": "latest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/soda-mpc/soda-sdk.git"
+  },
+  "scripts": {
+    "_build-dist": "rollup -c && uglifyjs ./dist/soda.js -o ./dist/soda.min.js && uglifyjs ./dist/soda.umd.js -o ./dist/soda.umd.min.js",
+    "_dist-stats": "gzip -k9f -S '.gz' ./dist/soda.min.js && gzip -k9f -S '.gz' ./dist/soda.umd.min.js && gzip -k9f -S '.gz' ./dist/wordlists-extra.min.js && du -hs ./dist/*.gz && echo '' && du -hs ./dist/*.js",
+    "auto-build": "npm run build -- -w",
+    "build": "tsc --project tsconfig.esm.json",
+    "build-all": "npm run build && npm run build-commonjs",
+    "build-clean": "npm run clean && npm run build && node lib.esm/_admin/update-version.js && node lib.esm/_admin/update-changelog.js && npm run build-all && npm run _build-dist && npm run _dist-stats",
+    "build-commonjs": "tsc --project tsconfig.commonjs.json",
+    "build-dist": "npm run build && npm run _build-dist && npm run _dist-stats",
+    "clean": "rm -rf dist lib.esm lib.commonjs && cp -r misc/basedirs/* .",
+    "postpublish": "node lib.esm/_admin/create-release.js",
+    "stats": "echo 'Dependencies' && npm ls --all --omit=dev",
+    "test": "npm run test-esm",
+    "test-browser": "node lib.esm/_admin/test-browser",
+    "test-commonjs": "mocha --reporter ./reporter.cjs ./lib.commonjs/_tests/test-*.js",
+    "test-coverage": "c8 -o output -r lcov -r text mocha --no-color --reporter ./reporter.cjs ./lib.esm/_tests/test-*.js | tee output/summary.txt",
+    "test-esm": "mocha --trace-warnings --reporter ./reporter.cjs ./lib.esm/_tests/test-*.js"
+  },
+  "sideEffects": false,
+  "version": "0.0.1"
+}
