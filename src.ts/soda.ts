@@ -1,6 +1,11 @@
-
 export {
-    generateRSAKeyPair,
+  generateRSAKeyPair,
+  encryptAES,
+  decryptAES,
+  decryptValue,
+  decryptRSA,
+  prepareMessage,
+  signRawMessage
 } from "./crypto/index.js";
 
 /////////////////////////////
