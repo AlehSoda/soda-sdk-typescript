@@ -2,7 +2,7 @@
 /// <reference types="node" resolution-mode="require"/>
 import crypto from "crypto";
 import { ethers } from "ethers";
-export declare function encryptAES(plaintext: Buffer, key: Buffer): {
+export declare function encryptAES(plaintext: string, key: string): {
     ciphertext: Buffer;
     r: Buffer;
 };

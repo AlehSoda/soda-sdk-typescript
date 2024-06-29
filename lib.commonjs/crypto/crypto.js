@@ -9,22 +9,24 @@ const ethers_1 = require("ethers");
 const block_size = 16; // AES block size in bytes
 const hexBase = 16;
 function encryptAES(plaintext, key) {
+    const plaintextBuf = Buffer.from(plaintext, "hex");
+    const keyBuf = Buffer.from(key, "hex");
     // Ensure plaintext is smaller than 128 bits (16 bytes)
-    if (plaintext.length > block_size) {
+    if (plaintextBuf.length > block_size) {
         throw new RangeError("Plaintext size must be 128 bits or smaller.");
     }
     // Ensure key size is 128 bits (16 bytes)
-    if (key.length != block_size) {
+    if (keyBuf.length != block_size) {
         throw new RangeError("Key size must be 128 bits.");
     }
     // Create a new AES cipher using the provided key
-    const cipher = crypto_1.default.createCipheriv("aes-128-ecb", key, null);
+    const cipher = crypto_1.default.createCipheriv("aes-128-ecb", keyBuf, null);
     // Generate a random value 'r' of the same length as the block size
     const r = crypto_1.default.randomBytes(block_size);
     // Encrypt the random value 'r' using AES in ECB mode
     const encryptedR = cipher.update(r);
     // Pad the plaintext with zeros if it's smaller than the block size
-    const plaintext_padded = Buffer.concat([Buffer.alloc(block_size - plaintext.length), plaintext]);
+    const plaintext_padded = Buffer.concat([Buffer.alloc(block_size - plaintext.length), plaintextBuf]);
     // XOR the encrypted random value 'r' with the plaintext to obtain the ciphertext
     const ciphertext = Buffer.alloc(encryptedR.length);
     for (let i = 0; i < encryptedR.length; i++) {
@@ -112,7 +114,7 @@ function prepareMessage(plaintext, wallet, aesKey, contractAddress, functionSele
     const plaintextBytes = Buffer.alloc(8); // Allocate a buffer of size 8 bytes
     plaintextBytes.writeBigUInt64BE(plaintext); // Write the uint64 value to the buffer as little-endian
     // Encrypt the plaintext using AES key
-    const { ciphertext, r } = encryptAES(Buffer.from(aesKey, "hex"), plaintextBytes);
+    const { ciphertext, r } = encryptAES(aesKey, plaintextBytes.toString("hex"));
     const ct = Buffer.concat([ciphertext, r]);
     const messageHash = ethers_1.ethers.solidityPackedKeccak256(["address", "address", "bytes4", "uint256"], [wallet.address, contractAddress, functionSelector, BigInt("0x" + ct.toString("hex"))]);
     // Convert the ciphertext to BigInt

@@ -20,7 +20,8 @@ function getConfig(opts) {
     },
     context: "__$G",
     treeshake: true,
-    plugins: [ nodeResolve({
+    plugins: [
+      nodeResolve({
         exportConditions,
         mainFields,
         modulesOnly: true,
