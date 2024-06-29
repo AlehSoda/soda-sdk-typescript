@@ -3,12 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createRandomUserKey = exports.prepareIT = exports.sign = exports.decryptValue = exports.decryptRSA = exports.generateRSAKeyPair = void 0;
+exports.prepareMessage = exports.signRawMessage = exports.decryptValue = exports.decryptRSA = exports.generateRSAKeyPair = exports.decryptAES = exports.encryptAES = void 0;
 const crypto_1 = __importDefault(require("crypto"));
 const ethers_1 = require("ethers");
 const block_size = 16; // AES block size in bytes
 const hexBase = 16;
-function encrypt(key, plaintext) {
+function encryptAES(plaintext, key) {
     // Ensure plaintext is smaller than 128 bits (16 bytes)
     if (plaintext.length > block_size) {
         throw new RangeError("Plaintext size must be 128 bits or smaller.");
@@ -32,7 +32,8 @@ function encrypt(key, plaintext) {
     }
     return { ciphertext, r };
 }
-function decrypt(key, r, ciphertext) {
+exports.encryptAES = encryptAES;
+function decryptAES(ciphertext, key, r) {
     if (ciphertext.length !== block_size) {
         throw new RangeError("Ciphertext size must be 128 bits.");
     }
@@ -55,8 +56,8 @@ function decrypt(key, r, ciphertext) {
     }
     return plaintext;
 }
+exports.decryptAES = decryptAES;
 function generateRSAKeyPair() {
-    console.log("From node");
     // Generate a new RSA key pair
     return crypto_1.default.generateKeyPairSync("rsa", {
         modulusLength: 2048,
@@ -96,32 +97,27 @@ function decryptValue(ctAmount, userKey) {
     const cipher = ctArray.subarray(0, block_size);
     const r = ctArray.subarray(block_size);
     // Decrypt the cipher
-    const decryptedMessage = decrypt(Buffer.from(userKey, "hex"), r, cipher);
+    const decryptedMessage = decryptAES(cipher, Buffer.from(userKey, "hex"), r);
     return parseInt(decryptedMessage.toString("hex"), block_size);
 }
 exports.decryptValue = decryptValue;
-function sign(message, privateKey) {
-    const key = new ethers_1.SigningKey(privateKey);
-    const sig = key.sign(message);
-    return Buffer.concat([(0, ethers_1.getBytes)(sig.r), (0, ethers_1.getBytes)(sig.s), (0, ethers_1.getBytes)(`0x0${sig.v - 27}`)]);
+function signRawMessage(message, walletSigningKey) {
+    const signingKey = new ethers_1.ethers.SigningKey(walletSigningKey);
+    const sig = signingKey.sign(message);
+    return Buffer.concat([ethers_1.ethers.getBytes(sig.r), ethers_1.ethers.getBytes(sig.s), ethers_1.ethers.getBytes(`0x0${sig.v - 27}`)]);
 }
-exports.sign = sign;
-async function prepareIT(plaintext, wallet, userKey, contractAddress, functionSelector) {
+exports.signRawMessage = signRawMessage;
+function prepareMessage(plaintext, wallet, aesKey, contractAddress, functionSelector) {
     // Convert the plaintext to bytes
     const plaintextBytes = Buffer.alloc(8); // Allocate a buffer of size 8 bytes
     plaintextBytes.writeBigUInt64BE(plaintext); // Write the uint64 value to the buffer as little-endian
     // Encrypt the plaintext using AES key
-    const { ciphertext, r } = encrypt(Buffer.from(userKey, "hex"), plaintextBytes);
+    const { ciphertext, r } = encryptAES(Buffer.from(aesKey, "hex"), plaintextBytes);
     const ct = Buffer.concat([ciphertext, r]);
-    const message = (0, ethers_1.solidityPackedKeccak256)(["address", "address", "bytes4", "uint256"], [wallet.address, contractAddress, functionSelector, BigInt("0x" + ct.toString("hex"))]);
-    const signature = sign(message, wallet.privateKey);
+    const messageHash = ethers_1.ethers.solidityPackedKeccak256(["address", "address", "bytes4", "uint256"], [wallet.address, contractAddress, functionSelector, BigInt("0x" + ct.toString("hex"))]);
     // Convert the ciphertext to BigInt
     const ctInt = BigInt("0x" + ct.toString("hex"));
-    return { encryptedSecret: ctInt, signature };
+    return { ctInt, messageHash };
 }
-exports.prepareIT = prepareIT;
-function createRandomUserKey() {
-    return crypto_1.default.randomBytes(block_size).toString("hex");
-}
-exports.createRandomUserKey = createRandomUserKey;
+exports.prepareMessage = prepareMessage;
 //# sourceMappingURL=crypto.js.map

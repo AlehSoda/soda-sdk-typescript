@@ -1,5 +1,19 @@
-import { generateRSAKeyPair } from './crypto.js';
+import {
+  generateRSAKeyPair,
+  encryptAES,
+  decryptAES,
+  decryptValue,
+  decryptRSA,
+  prepareMessage,
+  signRawMessage
+} from './crypto.js';
 
 export {
   generateRSAKeyPair,
+  encryptAES,
+  decryptAES,
+  decryptValue,
+  decryptRSA,
+  prepareMessage,
+  signRawMessage
 };

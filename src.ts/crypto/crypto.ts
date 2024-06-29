@@ -1,10 +1,11 @@
 import crypto from "crypto";
-import { BaseWallet, SigningKey, getBytes, solidityPackedKeccak256 } from "ethers";
+import { ethers } from "ethers";
 
 const block_size = 16; // AES block size in bytes
 const hexBase = 16;
 
-function encrypt(key: Buffer, plaintext: Buffer) {
+
+export function encryptAES(plaintext: Buffer, key: Buffer) {
   // Ensure plaintext is smaller than 128 bits (16 bytes)
   if (plaintext.length > block_size) {
     throw new RangeError("Plaintext size must be 128 bits or smaller.");
@@ -36,7 +37,7 @@ function encrypt(key: Buffer, plaintext: Buffer) {
   return { ciphertext, r };
 }
 
-function decrypt(key: Buffer, r: Buffer, ciphertext: Buffer) {
+export function decryptAES(ciphertext: Buffer, key: Buffer, r: Buffer) {
   if (ciphertext.length !== block_size) {
     throw new RangeError("Ciphertext size must be 128 bits.");
   }
@@ -67,7 +68,6 @@ function decrypt(key: Buffer, r: Buffer, ciphertext: Buffer) {
 }
 
 export function generateRSAKeyPair() {
-  console.log("From node")
   // Generate a new RSA key pair
   return crypto.generateKeyPairSync("rsa", {
     modulusLength: 2048,
@@ -112,45 +112,32 @@ export function decryptValue(ctAmount: bigint, userKey: string) {
   const r = ctArray.subarray(block_size);
 
   // Decrypt the cipher
-  const decryptedMessage = decrypt(Buffer.from(userKey, "hex"), r, cipher);
+  const decryptedMessage = decryptAES(cipher, Buffer.from(userKey, "hex"), r);
 
   return parseInt(decryptedMessage.toString("hex"), block_size);
 }
 
-export function sign(message: string, privateKey: string) {
-  const key = new SigningKey(privateKey);
-  const sig = key.sign(message);
-  return Buffer.concat([getBytes(sig.r), getBytes(sig.s), getBytes(`0x0${sig.v - 27}`)]);
+export function signRawMessage(message: string | Buffer, walletSigningKey: string) {
+  const signingKey = new ethers.SigningKey(walletSigningKey);
+  const sig = signingKey.sign(message);
+  return Buffer.concat([ethers.getBytes(sig.r), ethers.getBytes(sig.s), ethers.getBytes(`0x0${sig.v - 27}`)]);
 }
 
-export async function prepareIT(
-  plaintext: bigint,
-  wallet: BaseWallet,
-  userKey: string,
-  contractAddress: string,
-  functionSelector: string,
-) {
+export function prepareMessage(plaintext: bigint, wallet: ethers.BaseWallet, aesKey: string, contractAddress: string, functionSelector: string) {
   // Convert the plaintext to bytes
   const plaintextBytes = Buffer.alloc(8); // Allocate a buffer of size 8 bytes
   plaintextBytes.writeBigUInt64BE(plaintext); // Write the uint64 value to the buffer as little-endian
 
   // Encrypt the plaintext using AES key
-  const { ciphertext, r } = encrypt(Buffer.from(userKey, "hex"), plaintextBytes);
+  const {ciphertext, r} = encryptAES(Buffer.from(aesKey, "hex"), plaintextBytes);
   const ct = Buffer.concat([ciphertext, r]);
 
-  const message = solidityPackedKeccak256(
+  const messageHash = ethers.solidityPackedKeccak256(
     ["address", "address", "bytes4", "uint256"],
     [wallet.address, contractAddress, functionSelector, BigInt("0x" + ct.toString("hex"))],
   );
-
-  const signature = sign(message, wallet.privateKey);
-
   // Convert the ciphertext to BigInt
   const ctInt = BigInt("0x" + ct.toString("hex"));
 
-  return { encryptedSecret: ctInt, signature };
-}
-
-export function createRandomUserKey() {
-  return crypto.randomBytes(block_size).toString("hex");
+  return {ctInt, messageHash}
 }
