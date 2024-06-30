@@ -59,7 +59,7 @@ function decryptAES(ciphertext, key, r) {
     return plaintext;
 }
 exports.decryptAES = decryptAES;
-function generateRSAKeyPair() {
+async function generateRSAKeyPair() {
     // Generate a new RSA key pair
     return crypto_1.default.generateKeyPairSync("rsa", {
         modulusLength: 2048,
@@ -74,7 +74,7 @@ function generateRSAKeyPair() {
     });
 }
 exports.generateRSAKeyPair = generateRSAKeyPair;
-function decryptRSA(privateKey, ciphertext) {
+function decryptRSA(ciphertext, privateKey) {
     // Load the private key in PEM format
     let privateKeyPEM = privateKey.toString("base64");
     privateKeyPEM = `-----BEGIN PRIVATE KEY-----\n${privateKeyPEM}\n-----END PRIVATE KEY-----`;
@@ -86,7 +86,7 @@ function decryptRSA(privateKey, ciphertext) {
     }, ciphertext);
 }
 exports.decryptRSA = decryptRSA;
-function decryptValue(ctAmount, userKey) {
+function decryptValue(ctAmount, aesKey) {
     // Convert CT to bytes
     let ctString = ctAmount.toString(hexBase);
     let ctArray = Buffer.from(ctString, "hex");
@@ -99,7 +99,7 @@ function decryptValue(ctAmount, userKey) {
     const cipher = ctArray.subarray(0, block_size);
     const r = ctArray.subarray(block_size);
     // Decrypt the cipher
-    const decryptedMessage = decryptAES(cipher, Buffer.from(userKey, "hex"), r);
+    const decryptedMessage = decryptAES(cipher, Buffer.from(aesKey, "hex"), r);
     return parseInt(decryptedMessage.toString("hex"), block_size);
 }
 exports.decryptValue = decryptValue;

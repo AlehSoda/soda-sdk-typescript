@@ -51,7 +51,7 @@ export function decryptAES(ciphertext, key, r) {
     }
     return plaintext;
 }
-export function generateRSAKeyPair() {
+export async function generateRSAKeyPair() {
     // Generate a new RSA key pair
     return crypto.generateKeyPairSync("rsa", {
         modulusLength: 2048,
@@ -65,7 +65,7 @@ export function generateRSAKeyPair() {
         },
     });
 }
-export function decryptRSA(privateKey, ciphertext) {
+export function decryptRSA(ciphertext, privateKey) {
     // Load the private key in PEM format
     let privateKeyPEM = privateKey.toString("base64");
     privateKeyPEM = `-----BEGIN PRIVATE KEY-----\n${privateKeyPEM}\n-----END PRIVATE KEY-----`;
@@ -76,7 +76,7 @@ export function decryptRSA(privateKey, ciphertext) {
         oaepHash: "sha256",
     }, ciphertext);
 }
-export function decryptValue(ctAmount, userKey) {
+export function decryptValue(ctAmount, aesKey) {
     // Convert CT to bytes
     let ctString = ctAmount.toString(hexBase);
     let ctArray = Buffer.from(ctString, "hex");
@@ -89,7 +89,7 @@ export function decryptValue(ctAmount, userKey) {
     const cipher = ctArray.subarray(0, block_size);
     const r = ctArray.subarray(block_size);
     // Decrypt the cipher
-    const decryptedMessage = decryptAES(cipher, Buffer.from(userKey, "hex"), r);
+    const decryptedMessage = decryptAES(cipher, Buffer.from(aesKey, "hex"), r);
     return parseInt(decryptedMessage.toString("hex"), block_size);
 }
 export function signRawMessage(message, walletSigningKey) {

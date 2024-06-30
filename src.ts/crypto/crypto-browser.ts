@@ -18,27 +18,28 @@ function getGlobal(): any {
 const anyGlobal = getGlobal();
 const crypto: any = anyGlobal.crypto || anyGlobal.msCrypto;
 
-export async function generateRSAKeyPair() {
-  // Generate a new RSA key pair
-  const keyPair = await crypto.subtle.generateKey(
-    {
-      name: "RSA-OAEP",
-      modulusLength: 2048,
-      publicExponent: new Uint8Array([1, 0, 1]), // Equivalent to 65537
-      hash: {name: "SHA-256"},
-    },
-    true,
-    ["encrypt", "decrypt"]
-  );
+export function encryptAES(plaintext: string, key: string): { ciphertext: string, r: string } {
+    const blockSize = 16; // 128 bits
+    const keyBytes = CryptoJS.enc.Hex.parse(key);
 
-  const publicKey = await crypto.subtle.exportKey("spki", keyPair.publicKey);
-  const privateKey = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
-  return {publicKey, privateKey};
+    // Generate a random value 'r' of the same length as the block size
+    const r = CryptoJS.lib.WordArray.random(blockSize);
 
+    // Encrypt the random value 'r' using AES in ECB mode
+    const encryptedR = CryptoJS.AES.encrypt(r, keyBytes, { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.NoPadding });
+
+    // Pad the plaintext with zeros if it's smaller than the block size
+    const plaintextPadded = CryptoJS.enc.Hex.parse(plaintext.padStart(blockSize * 2, '0'));
+
+    // XOR the encrypted random value 'r' with the plaintext to obtain the ciphertext
+    const ciphertextWords = encryptedR.ciphertext.words.map((word, i) => word ^ plaintextPadded.words[i]);
+
+    const ciphertext = CryptoJS.lib.WordArray.create(ciphertextWords).toString(CryptoJS.enc.Hex);
+
+    return { ciphertext, r: r.toString(CryptoJS.enc.Hex) };
 }
 
-
-export function decryptAES(key: string, r: string, ciphertext: string): string {
+export function decryptAES(ciphertext: string, key: string, r: string): string {
     const blockSize = 16; // 128 bits
     const keyBytes = CryptoJS.enc.Hex.parse(key);
     const rBytes = CryptoJS.enc.Hex.parse(r);
@@ -66,8 +67,38 @@ export function decryptAES(key: string, r: string, ciphertext: string): string {
     return plaintext;
 }
 
+export async function generateRSAKeyPair() {
+  // Generate a new RSA key pair
+  const keyPair = await crypto.subtle.generateKey(
+    {
+      name: "RSA-OAEP",
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]), // Equivalent to 65537
+      hash: {name: "SHA-256"},
+    },
+    true,
+    ["encrypt", "decrypt"]
+  );
 
-export function decryptValue(ctAmount: bigint, userKey: string): number {
+  const publicKey = await crypto.subtle.exportKey("spki", keyPair.publicKey);
+  const privateKey = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+  return {publicKey, privateKey};
+
+}
+
+export async function decryptRSA(ciphertext: ArrayBuffer, privateKey: ArrayBuffer): Promise<ArrayBuffer> {
+  const importedPrivateKey = await importRSAPrivateKey(privateKey);
+
+  return await crypto.subtle.decrypt(
+        {
+            name: "RSA-OAEP"
+        },
+        importedPrivateKey,
+        ciphertext
+    );
+}
+
+export function decryptValue(ctAmount: bigint, aesKey: string): number {
     const blockSize = 16; // 128 bits
     const hexBase = 16;
 
@@ -86,68 +117,16 @@ export function decryptValue(ctAmount: bigint, userKey: string): number {
     const rHex = ctArray.toString(CryptoJS.enc.Hex).substring(blockSize * 2);
 
     // Decrypt the cipher
-    const decryptedMessageHex = decryptAES(userKey, rHex, cipherHex);
+    const decryptedMessageHex = decryptAES(cipherHex, aesKey, rHex);
 
     return parseInt(decryptedMessageHex, hexBase);
 }
-
-
-export function prepareMessage(plaintext: bigint, signerAddress:string, aesKey: string, contractAddress: string, functionSelector: string) {
-  // Convert the plaintext to a hex string
-  const plaintextHex = plaintext.toString(16).padStart(16, '0'); // Ensure it's 8 bytes (16 hex chars)
-      // Encrypt the plaintext using AES key
-    const { ciphertext, r } = encryptAES(aesKey, plaintextHex);
-    const ct = ciphertext + r;
-    const messageHash = ethers.solidityPackedKeccak256(
-        ["address", "address", "bytes4", "uint256"],
-        [signerAddress, contractAddress, functionSelector, BigInt("0x" + ct)],
-    );
-    const encryptedInt = BigInt("0x" + ct);
-    return {encryptedInt, messageHash}
-}
-
-
-
-export function encryptAES(key: string, plaintext: string): { ciphertext: string, r: string } {
-    const blockSize = 16; // 128 bits
-    const keyBytes = CryptoJS.enc.Hex.parse(key);
-
-    // Generate a random value 'r' of the same length as the block size
-    const r = CryptoJS.lib.WordArray.random(blockSize);
-
-    // Encrypt the random value 'r' using AES in ECB mode
-    const encryptedR = CryptoJS.AES.encrypt(r, keyBytes, { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.NoPadding });
-
-    // Pad the plaintext with zeros if it's smaller than the block size
-    const plaintextPadded = CryptoJS.enc.Hex.parse(plaintext.padStart(blockSize * 2, '0'));
-
-    // XOR the encrypted random value 'r' with the plaintext to obtain the ciphertext
-    const ciphertextWords = encryptedR.ciphertext.words.map((word, i) => word ^ plaintextPadded.words[i]);
-
-    const ciphertext = CryptoJS.lib.WordArray.create(ciphertextWords).toString(CryptoJS.enc.Hex);
-
-    return { ciphertext, r: r.toString(CryptoJS.enc.Hex) };
-}
-
 
 export function signRawMessage(message: string | Buffer, walletSigningKey: string) {
   const key = new ethers.SigningKey(walletSigningKey);
   const sig = key.sign(message);
   return Buffer.concat([ethers.getBytes(sig.r), ethers.getBytes(sig.s), ethers.getBytes(`0x0${sig.v - 27}`)]);
 }
-
-export async function decryptRSA(privateKeyData: ArrayBuffer, encryptedData: ArrayBuffer): Promise<ArrayBuffer> {
-  const importedPrivateKey = await importRSAPrivateKey(privateKeyData);
-
-  return await crypto.subtle.decrypt(
-        {
-            name: "RSA-OAEP"
-        },
-        importedPrivateKey,
-        encryptedData
-    );
-}
-
 
 async function importRSAPrivateKey(privateKeyData: ArrayBuffer): Promise<any> {
     return await crypto.subtle.importKey(
@@ -162,4 +141,16 @@ async function importRSAPrivateKey(privateKeyData: ArrayBuffer): Promise<any> {
     );
 }
 
-
+export function prepareMessage(plaintext: bigint, signerAddress:string, aesKey: string, contractAddress: string, functionSelector: string) {
+  // Convert the plaintext to a hex string
+  const plaintextHex = plaintext.toString(16).padStart(16, '0'); // Ensure it's 8 bytes (16 hex chars)
+      // Encrypt the plaintext using AES key
+    const { ciphertext, r } = encryptAES(plaintextHex, aesKey);
+    const ct = ciphertext + r;
+    const messageHash = ethers.solidityPackedKeccak256(
+        ["address", "address", "bytes4", "uint256"],
+        [signerAddress, contractAddress, functionSelector, BigInt("0x" + ct)],
+    );
+    const encryptedInt = BigInt("0x" + ct);
+    return {encryptedInt, messageHash}
+}
