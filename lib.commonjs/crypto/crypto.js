@@ -6,6 +6,14 @@ const crypto_1 = tslib_1.__importDefault(require("crypto"));
 const ethers_1 = require("ethers");
 const block_size = 16; // AES block size in bytes
 const hexBase = 16;
+/**
+ * Encrypts plaintext using AES encryption with the specified key.
+ *
+ * @param {string} plaintext - The plaintext to be encrypted, represented as a hex string.
+ * @param {string} key - The AES encryption key, represented as a hex string. Must be 128 bits (16 bytes).
+ * @returns {{ ciphertext: Buffer, r: Buffer }} - An object containing the ciphertext as a Buffer and the random value 'r' as a Buffer.
+ * @throws {RangeError} - If the size of plaintext or key is not 128 bits (16 bytes).
+ */
 function encryptAES(plaintext, key) {
     const plaintextBuf = Buffer.from(plaintext, "hex");
     const keyBuf = Buffer.from(key, "hex");
@@ -33,6 +41,15 @@ function encryptAES(plaintext, key) {
     return { ciphertext, r };
 }
 exports.encryptAES = encryptAES;
+/**
+ * Decrypts ciphertext using AES decryption with the specified key and random value.
+ *
+ * @param {Buffer} ciphertext - The ciphertext to be decrypted, represented as a Buffer.
+ * @param {Buffer} key - The AES encryption key, represented as a Buffer. Must be 128 bits (16 bytes).
+ * @param {Buffer} r - The random value 'r' used for encryption, represented as a Buffer. Must be 128 bits (16 bytes).
+ * @returns {Buffer} - The decrypted plaintext, represented as a Buffer.
+ * @throws {RangeError} - If the size of ciphertext, key, or random value 'r' is not 128 bits (16 bytes).
+ */
 function decryptAES(ciphertext, key, r) {
     if (ciphertext.length !== block_size) {
         throw new RangeError("Ciphertext size must be 128 bits.");
@@ -57,6 +74,11 @@ function decryptAES(ciphertext, key, r) {
     return plaintext;
 }
 exports.decryptAES = decryptAES;
+/**
+ * Generates a new RSA key pair.
+ *
+ * @returns {Promise<CryptoKeyPair>} - A Promise that resolves to an object containing the generated RSA key pair.
+ */
 async function generateRSAKeyPair() {
     // Generate a new RSA key pair
     return crypto_1.default.generateKeyPairSync("rsa", {
@@ -72,6 +94,14 @@ async function generateRSAKeyPair() {
     });
 }
 exports.generateRSAKeyPair = generateRSAKeyPair;
+/**
+ * Decrypts ciphertext using RSA-OAEP with the provided private key.
+ *
+ * @param {ArrayBuffer} ciphertext - The ciphertext to be decrypted, represented as an ArrayBuffer.
+ * @param {ArrayBuffer} privateKey - The private key used for decryption, represented as an ArrayBuffer.
+ * @returns {Promise<ArrayBuffer>} - A Promise that resolves to the decrypted plaintext as an ArrayBuffer.
+ * @throws {Error} - If decryption fails or if the parameters are not of the expected type.
+ */
 function decryptRSA(ciphertext, privateKey) {
     // Load the private key in PEM format
     let privateKeyPEM = privateKey.toString("base64");
@@ -84,7 +114,19 @@ function decryptRSA(ciphertext, privateKey) {
     }, ciphertext);
 }
 exports.decryptRSA = decryptRSA;
+/**
+ * Decrypts a given ciphertext amount using the specified AES key.
+ *
+ * @param {bigint} ctAmount - The ciphertext amount to decrypt, represented as a bigint.
+ * @param {string} aesKey - The AES key used for decryption, represented as a hex string. The key must be 16, 24, or 32 bytes in length.
+ * @returns {number} - The decrypted value as an integer.
+ * @throws {TypeError} - If the ctAmount is not a bigint or if the aesKey is not a valid hex string of the correct length.
+ */
 function decryptValue(ctAmount, aesKey) {
+    // Validate aesKey (32 bytes as hex string)
+    if (typeof aesKey !== "string" || aesKey.length != 32) {
+        throw new TypeError("Invalid AES key length. Expected 32 bytes.");
+    }
     // Convert CT to bytes
     let ctString = ctAmount.toString(hexBase);
     let ctArray = Buffer.from(ctString, "hex");
@@ -101,13 +143,56 @@ function decryptValue(ctAmount, aesKey) {
     return parseInt(decryptedMessage.toString("hex"), block_size);
 }
 exports.decryptValue = decryptValue;
+/**
+ * Signs a raw message using the provided wallet signing key.
+ *
+ * @param {string | Buffer} message - The message to be signed. Must be a non-empty string or Buffer.
+ * @param {string} walletSigningKey - The private key used for signing, represented as a 64-character hex string.
+ * @returns {Buffer} - A Buffer containing the concatenated signature components (r, s, and v).
+ * @throws {TypeError} - If the message is empty or if the walletSigningKey is not a valid 64-character hex string.
+ */
 function signRawMessage(message, walletSigningKey) {
+    // Validate message
+    if (message.length == 0) {
+        throw new TypeError("Message must be a non-empty string or Buffer");
+    }
+    // Validate walletSigningKey (private key length should be 64 hex characters)
+    if (typeof walletSigningKey !== "string" || walletSigningKey.length !== 64) {
+        throw new TypeError("Invalid wallet signing key length. Expected 64 hex characters.");
+    }
     const signingKey = new ethers_1.ethers.SigningKey(walletSigningKey);
     const sig = signingKey.sign(message);
     return Buffer.concat([ethers_1.ethers.getBytes(sig.r), ethers_1.ethers.getBytes(sig.s), ethers_1.ethers.getBytes(`0x0${sig.v - 27}`)]);
 }
 exports.signRawMessage = signRawMessage;
+/**
+ * Prepares an encrypted message and its corresponding hash for a given plaintext and parameters.
+ *
+ * @param {bigint} plaintext - The plaintext to be encrypted, represented as a bigint.
+ * @param {string} signerAddress - The address of the signer, represented as a string. Must be a valid Ethereum address.
+ * @param {string} aesKey - The AES key used for encryption, represented as a hex string. Must be 32 bytes in length.
+ * @param {string} contractAddress - The address of the contract, represented as a string. Must be a valid Ethereum address.
+ * @param {string} functionSelector - The function selector, represented as a hex string. Must be 4 bytes (8 hex characters) prefixed with '0x'.
+ * @returns {{encryptedInt: bigint, messageHash: string}} - An object containing the encrypted value as a bigint and the message hash as a string.
+ * @throws {TypeError} - If any of the parameters are not of the expected type or format.
+ */
 function prepareMessage(plaintext, signerAddress, aesKey, contractAddress, functionSelector) {
+    // Validate signerAddress (Ethereum address)
+    if (!ethers_1.ethers.isAddress(signerAddress)) {
+        throw new TypeError("Invalid signer address");
+    }
+    // Validate aesKey (32 bytes as hex string)
+    if (typeof aesKey !== "string" || aesKey.length != 32) {
+        throw new TypeError("Invalid AES key length. Expected 32 bytes.");
+    }
+    // Validate contractAddress (Ethereum address)
+    if (typeof contractAddress !== "string" || !ethers_1.ethers.isAddress(signerAddress)) {
+        throw new TypeError("Invalid contract address");
+    }
+    // Validate functionSelector (4 bytes as hex string)
+    if (typeof functionSelector !== "string" || functionSelector.length !== 10 || !functionSelector.startsWith('0x')) {
+        throw new TypeError("Invalid function selector");
+    }
     // Convert the plaintext to bytes
     const plaintextBytes = Buffer.alloc(8); // Allocate a buffer of size 8 bytes
     plaintextBytes.writeBigUInt64BE(plaintext); // Write the uint64 value to the buffer as little-endian

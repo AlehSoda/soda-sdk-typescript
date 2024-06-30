@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const index_js_1 = require("../index.js");
+const soda_1 = require("../soda");
 const ethers_1 = require("ethers");
 describe("Test Soda SDK functions", function () {
     it("Prepare message", function () {
@@ -10,7 +10,7 @@ describe("Test Soda SDK functions", function () {
         const aesKey = "4766255d3eac2d1e85b414dd8cc9bdda";
         const contractAddress = "0xd19356256604E5832C8cAc3eb3Eef4A6f5A67164";
         const functionSelector = "0xecf6f982";
-        const prepared = (0, index_js_1.prepareMessage)(plainText, wallet.address, aesKey, contractAddress, functionSelector);
+        const prepared = (0, soda_1.prepareMessage)(plainText, wallet.address, aesKey, contractAddress, functionSelector);
         console.assert(prepared.encryptedInt);
         console.assert(prepared.messageHash);
     });

@@ -1,4 +1,4 @@
-import { prepareMessage } from "../index.js";
+import { prepareMessage } from "../soda";
 import { ethers } from "ethers";
 describe("Test Soda SDK functions", function () {
     it("Prepare message", function () {

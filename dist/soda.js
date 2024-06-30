@@ -3639,6 +3639,40 @@ function getAddress(address) {
     assertArgument(false, "invalid address", "address", address);
 }
 
+/**
+ *  Returns true if %%value%% is a valid address.
+ *
+ *  @example:
+ *    // Valid address
+ *    isAddress("0x8ba1f109551bD432803012645Ac136ddd64DBA72")
+ *    //_result:
+ *
+ *    // Valid ICAP address
+ *    isAddress("XE65GB6LDNXYOFTX0NSV3FUWKOWIXAMJK36")
+ *    //_result:
+ *
+ *    // Invalid checksum
+ *    isAddress("0x8Ba1f109551bD432803012645Ac136ddd64DBa72")
+ *    //_result:
+ *
+ *    // Invalid ICAP checksum
+ *    isAddress("0x8Ba1f109551bD432803012645Ac136ddd64DBA72")
+ *    //_result:
+ *
+ *    // Not an address (an ENS name requires a provided and an
+ *    // asynchronous API to access)
+ *    isAddress("ricmoo.eth")
+ *    //_result:
+ */
+function isAddress(value) {
+    try {
+        getAddress(value);
+        return true;
+    }
+    catch (error) { }
+    return false;
+}
+
 const regexBytes = new RegExp("^bytes([0-9]+)$");
 const regexNumber = new RegExp("^(u?int)([0-9]*)$");
 const regexArray = new RegExp("^(.*)\\[([0-9]*)\\]$");
@@ -3741,6 +3775,13 @@ function getGlobal() {
 }
 const anyGlobal = getGlobal();
 const crypto = anyGlobal.crypto || anyGlobal.msCrypto;
+/**
+ * Encrypts plaintext using AES encryption with the specified key.
+ *
+ * @param {string} plaintext - The plaintext to be encrypted, represented as a hex string.
+ * @param {string} key - The AES encryption key, represented as a hex string. Must be 128 bits (16 bytes).
+ * @returns {{ ciphertext: string, r: string }} - An object containing the ciphertext as a hex string and the random value 'r' as a hex string.
+ */
 function encryptAES(plaintext, key) {
     const blockSize = 16; // 128 bits
     const keyBytes = CryptoJS.enc.Hex.parse(key);
@@ -3755,6 +3796,15 @@ function encryptAES(plaintext, key) {
     const ciphertext = CryptoJS.lib.WordArray.create(ciphertextWords).toString(CryptoJS.enc.Hex);
     return { ciphertext, r: r.toString(CryptoJS.enc.Hex) };
 }
+/**
+ * Decrypts ciphertext using AES decryption with the specified key and random value.
+ *
+ * @param {string} ciphertext - The ciphertext to be decrypted, represented as a hex string.
+ * @param {string} key - The AES encryption key, represented as a hex string. Must be 128 bits (16 bytes).
+ * @param {string} r - The random value 'r' used for encryption, represented as a hex string. Must be 128 bits (16 bytes).
+ * @returns {string} - The decrypted plaintext, represented as a hex string.
+ * @throws {RangeError} - If the size of ciphertext, key, or random value 'r' is not 128 bits (16 bytes).
+ */
 function decryptAES(ciphertext, key, r) {
     const blockSize = 16; // 128 bits
     const keyBytes = CryptoJS.enc.Hex.parse(key);
@@ -3776,6 +3826,11 @@ function decryptAES(ciphertext, key, r) {
     const plaintext = CryptoJS.lib.WordArray.create(plaintextWords).toString(CryptoJS.enc.Hex);
     return plaintext;
 }
+/**
+ * Generates a new RSA key pair.
+ *
+ * @returns {Promise<CryptoKeyPair>} - A Promise that resolves to an object containing the generated RSA key pair.
+ */
 async function generateRSAKeyPair() {
     // Generate a new RSA key pair
     const keyPair = await crypto.subtle.generateKey({
@@ -3788,13 +3843,33 @@ async function generateRSAKeyPair() {
     const privateKey = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
     return { publicKey, privateKey };
 }
+/**
+ * Decrypts ciphertext using RSA-OAEP with the provided private key.
+ *
+ * @param {ArrayBuffer} ciphertext - The ciphertext to be decrypted, represented as an ArrayBuffer.
+ * @param {ArrayBuffer} privateKey - The private key used for decryption, represented as an ArrayBuffer.
+ * @returns {Promise<ArrayBuffer>} - A Promise that resolves to the decrypted plaintext as an ArrayBuffer.
+ * @throws {Error} - If decryption fails or if the parameters are not of the expected type.
+ */
 async function decryptRSA(ciphertext, privateKey) {
     const importedPrivateKey = await importRSAPrivateKey(privateKey);
     return await crypto.subtle.decrypt({
         name: "RSA-OAEP"
     }, importedPrivateKey, ciphertext);
 }
+/**
+ * Decrypts a given ciphertext amount using the specified AES key.
+ *
+ * @param {bigint} ctAmount - The ciphertext amount to decrypt, represented as a bigint.
+ * @param {string} aesKey - The AES key used for decryption, represented as a hex string. The key must be 16, 24, or 32 bytes in length.
+ * @returns {number} - The decrypted value as an integer.
+ * @throws {TypeError} - If the ctAmount is not a bigint or if the aesKey is not a valid hex string of the correct length.
+ */
 function decryptValue(ctAmount, aesKey) {
+    // Validate aesKey (32 bytes as hex string)
+    if (typeof aesKey !== "string" || aesKey.length != 32) {
+        throw new TypeError("Invalid AES key length. Expected 32 bytes.");
+    }
     const blockSize = 16; // 128 bits
     const hexBase = 16;
     // Convert CT to hex string
@@ -3812,7 +3887,23 @@ function decryptValue(ctAmount, aesKey) {
     const decryptedMessageHex = decryptAES(cipherHex, aesKey, rHex);
     return parseInt(decryptedMessageHex, hexBase);
 }
+/**
+ * Signs a raw message using the provided wallet signing key.
+ *
+ * @param {string | Buffer} message - The message to be signed. Must be a non-empty string or Buffer.
+ * @param {string} walletSigningKey - The private key used for signing, represented as a 64-character hex string.
+ * @returns {Buffer} - A Buffer containing the concatenated signature components (r, s, and v).
+ * @throws {TypeError} - If the message is empty or if the walletSigningKey is not a valid 64-character hex string.
+ */
 function signRawMessage(message, walletSigningKey) {
+    // Validate message
+    if (message.length == 0) {
+        throw new TypeError("Message must be a non-empty string or Buffer");
+    }
+    // Validate walletSigningKey (private key length should be 64 hex characters)
+    if (typeof walletSigningKey !== "string" || walletSigningKey.length !== 64) {
+        throw new TypeError("Invalid wallet signing key length. Expected 64 hex characters.");
+    }
     const key = new SigningKey(walletSigningKey);
     const sig = key.sign(message);
     return Buffer.concat([getBytes(sig.r), getBytes(sig.s), getBytes(`0x0${sig.v - 27}`)]);
@@ -3823,7 +3914,34 @@ async function importRSAPrivateKey(privateKeyData) {
         hash: { name: "SHA-256" }
     }, true, ["decrypt"]);
 }
+/**
+ * Prepares an encrypted message and its corresponding hash for a given plaintext and parameters.
+ *
+ * @param {bigint} plaintext - The plaintext to be encrypted, represented as a bigint.
+ * @param {string} signerAddress - The address of the signer, represented as a string. Must be a valid Ethereum address.
+ * @param {string} aesKey - The AES key used for encryption, represented as a hex string. Must be 32 bytes in length.
+ * @param {string} contractAddress - The address of the contract, represented as a string. Must be a valid Ethereum address.
+ * @param {string} functionSelector - The function selector, represented as a hex string. Must be 4 bytes (8 hex characters) prefixed with '0x'.
+ * @returns {{encryptedInt: bigint, messageHash: string}} - An object containing the encrypted value as a bigint and the message hash as a string.
+ * @throws {TypeError} - If any of the parameters are not of the expected type or format.
+ */
 function prepareMessage(plaintext, signerAddress, aesKey, contractAddress, functionSelector) {
+    // Validate signerAddress (Ethereum address)
+    if (!isAddress(signerAddress)) {
+        throw new TypeError("Invalid signer address");
+    }
+    // Validate aesKey (32 bytes as hex string)
+    if (typeof aesKey !== "string" || aesKey.length != 32) {
+        throw new TypeError("Invalid AES key length. Expected 32 bytes.");
+    }
+    // Validate contractAddress (Ethereum address)
+    if (typeof contractAddress !== "string" || !isAddress(signerAddress)) {
+        throw new TypeError("Invalid contract address");
+    }
+    // Validate functionSelector (4 bytes as hex string)
+    if (typeof functionSelector !== "string" || functionSelector.length !== 10 || !functionSelector.startsWith('0x')) {
+        throw new TypeError("Invalid function selector");
+    }
     // Convert the plaintext to a hex string
     const plaintextHex = plaintext.toString(16).padStart(16, '0'); // Ensure it's 8 bytes (16 hex chars)
     // Encrypt the plaintext using AES key
