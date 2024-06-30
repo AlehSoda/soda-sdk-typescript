@@ -1,1 +1,1 @@
-{"version":3,"file":"soda.d.ts","sourceRoot":"","sources":["../src.ts/soda.ts"],"names":[],"mappings":"AAAA,OAAO,EACL,kBAAkB,EAClB,UAAU,EACV,UAAU,EACV,YAAY,EACZ,UAAU,EACV,cAAc,EACd,cAAc,EACf,MAAM,mBAAmB,CAAC"}
+{"version":3,"file":"soda.d.ts","sourceRoot":"","sources":["../src.ts/soda.ts"],"names":[],"mappings":"AAAA,OAAO,EACL,kBAAkB,EAClB,UAAU,EACV,UAAU,EACV,YAAY,EACZ,UAAU,EACV,cAAc,EACd,cAAc,EACf,MAAM,mBAAmB,CAAC;AAE3B,eAAO,MAAM,kCAAkC,+CAA+C,CAAA;AAC9F,eAAO,MAAM,uBAAuB,UAGnC,CAAC"}

@@ -20,7 +20,7 @@ export function encryptAES(plaintext, key) {
     // Encrypt the random value 'r' using AES in ECB mode
     const encryptedR = cipher.update(r);
     // Pad the plaintext with zeros if it's smaller than the block size
-    const plaintext_padded = Buffer.concat([Buffer.alloc(block_size - plaintext.length), plaintextBuf]);
+    const plaintext_padded = Buffer.concat([Buffer.alloc(block_size - plaintextBuf.length), plaintextBuf]);
     // XOR the encrypted random value 'r' with the plaintext to obtain the ciphertext
     const ciphertext = Buffer.alloc(encryptedR.length);
     for (let i = 0; i < encryptedR.length; i++) {

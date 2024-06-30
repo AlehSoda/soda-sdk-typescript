@@ -29,7 +29,7 @@ export function encryptAES(plaintext: string, key: string) {
   const encryptedR = cipher.update(r);
 
   // Pad the plaintext with zeros if it's smaller than the block size
-  const plaintext_padded = Buffer.concat([Buffer.alloc(block_size - plaintext.length), plaintextBuf]);
+  const plaintext_padded = Buffer.concat([Buffer.alloc(block_size - plaintextBuf.length), plaintextBuf]);
 
   // XOR the encrypted random value 'r' with the plaintext to obtain the ciphertext
   const ciphertext = Buffer.alloc(encryptedR.length);

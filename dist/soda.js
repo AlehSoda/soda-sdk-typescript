@@ -3834,13 +3834,16 @@ function prepareMessage(plaintext, signerAddress, aesKey, contractAddress, funct
     return { encryptedInt, messageHash };
 }
 
-/////////////////////////////
-// Types
-// export type { ProgressCallback, SignatureLike } from "./crypto/index.js";
-// dummy change; to pick-up ws security issue changes
+const ONBOARDING_CONTRACT_DEVNET_ADDRESS = "0xE7Bc1a2A2633A1fA4E361f98C4841Cc3c58B94CD";
+const ONBOARDING_CONTRACT_ABI = [
+    "function getUserKey(bytes signedEK, bytes signature) public",
+    "event UserKey(address indexed _owner, bytes _userKey)"
+];
 
 var soda = /*#__PURE__*/Object.freeze({
     __proto__: null,
+    ONBOARDING_CONTRACT_ABI: ONBOARDING_CONTRACT_ABI,
+    ONBOARDING_CONTRACT_DEVNET_ADDRESS: ONBOARDING_CONTRACT_DEVNET_ADDRESS,
     decryptAES: decryptAES,
     decryptRSA: decryptRSA,
     decryptValue: decryptValue,
@@ -3850,5 +3853,5 @@ var soda = /*#__PURE__*/Object.freeze({
     signRawMessage: signRawMessage
 });
 
-export { decryptAES, decryptRSA, decryptValue, encryptAES, generateRSAKeyPair, prepareMessage, signRawMessage, soda };
+export { ONBOARDING_CONTRACT_ABI, ONBOARDING_CONTRACT_DEVNET_ADDRESS, decryptAES, decryptRSA, decryptValue, encryptAES, generateRSAKeyPair, prepareMessage, signRawMessage, soda };
 //# sourceMappingURL=soda.js.map
