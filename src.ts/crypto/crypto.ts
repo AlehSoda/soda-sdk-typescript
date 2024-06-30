@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { ethers } from "ethers";
+import {ethers} from "ethers";
 
 const block_size = 16; // AES block size in bytes
 const hexBase = 16;
@@ -37,7 +37,7 @@ export function encryptAES(plaintext: string, key: string) {
     ciphertext[i] = encryptedR[i] ^ plaintext_padded[i];
   }
 
-  return { ciphertext, r };
+  return {ciphertext, r};
 }
 
 export function decryptAES(ciphertext: Buffer, key: Buffer, r: Buffer) {
@@ -126,21 +126,21 @@ export function signRawMessage(message: string | Buffer, walletSigningKey: strin
   return Buffer.concat([ethers.getBytes(sig.r), ethers.getBytes(sig.s), ethers.getBytes(`0x0${sig.v - 27}`)]);
 }
 
-export function prepareMessage(plaintext: bigint, wallet: ethers.BaseWallet, aesKey: string, contractAddress: string, functionSelector: string) {
+export function prepareMessage(plaintext: bigint, signerAddress:string, aesKey: string, contractAddress: string, functionSelector: string) {
   // Convert the plaintext to bytes
   const plaintextBytes = Buffer.alloc(8); // Allocate a buffer of size 8 bytes
   plaintextBytes.writeBigUInt64BE(plaintext); // Write the uint64 value to the buffer as little-endian
 
   // Encrypt the plaintext using AES key
-  const {ciphertext, r} = encryptAES(aesKey, plaintextBytes.toString("hex"));
+  const {ciphertext, r} = encryptAES(plaintextBytes.toString("hex"), aesKey);
   const ct = Buffer.concat([ciphertext, r]);
 
   const messageHash = ethers.solidityPackedKeccak256(
     ["address", "address", "bytes4", "uint256"],
-    [wallet.address, contractAddress, functionSelector, BigInt("0x" + ct.toString("hex"))],
+    [signerAddress, contractAddress, functionSelector, BigInt("0x" + ct.toString("hex"))],
   );
   // Convert the ciphertext to BigInt
-  const ctInt = BigInt("0x" + ct.toString("hex"));
+  const encryptedInt = BigInt("0x" + ct.toString("hex"));
 
-  return {ctInt, messageHash}
+  return {encryptedInt, messageHash}
 }

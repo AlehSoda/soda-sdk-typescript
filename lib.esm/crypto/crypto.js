@@ -97,16 +97,16 @@ export function signRawMessage(message, walletSigningKey) {
     const sig = signingKey.sign(message);
     return Buffer.concat([ethers.getBytes(sig.r), ethers.getBytes(sig.s), ethers.getBytes(`0x0${sig.v - 27}`)]);
 }
-export function prepareMessage(plaintext, wallet, aesKey, contractAddress, functionSelector) {
+export function prepareMessage(plaintext, signerAddress, aesKey, contractAddress, functionSelector) {
     // Convert the plaintext to bytes
     const plaintextBytes = Buffer.alloc(8); // Allocate a buffer of size 8 bytes
     plaintextBytes.writeBigUInt64BE(plaintext); // Write the uint64 value to the buffer as little-endian
     // Encrypt the plaintext using AES key
-    const { ciphertext, r } = encryptAES(aesKey, plaintextBytes.toString("hex"));
+    const { ciphertext, r } = encryptAES(plaintextBytes.toString("hex"), aesKey);
     const ct = Buffer.concat([ciphertext, r]);
-    const messageHash = ethers.solidityPackedKeccak256(["address", "address", "bytes4", "uint256"], [wallet.address, contractAddress, functionSelector, BigInt("0x" + ct.toString("hex"))]);
+    const messageHash = ethers.solidityPackedKeccak256(["address", "address", "bytes4", "uint256"], [signerAddress, contractAddress, functionSelector, BigInt("0x" + ct.toString("hex"))]);
     // Convert the ciphertext to BigInt
-    const ctInt = BigInt("0x" + ct.toString("hex"));
-    return { ctInt, messageHash };
+    const encryptedInt = BigInt("0x" + ct.toString("hex"));
+    return { encryptedInt, messageHash };
 }
 //# sourceMappingURL=crypto.js.map

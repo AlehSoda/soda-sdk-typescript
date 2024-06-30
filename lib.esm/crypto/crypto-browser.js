@@ -66,15 +66,15 @@ export function decryptValue(ctAmount, userKey) {
     const decryptedMessageHex = decryptAES(userKey, rHex, cipherHex);
     return parseInt(decryptedMessageHex, hexBase);
 }
-export function prepareMessage(plaintext, wallet, aesKey, contractAddress, functionSelector) {
+export function prepareMessage(plaintext, signerAddress, aesKey, contractAddress, functionSelector) {
     // Convert the plaintext to a hex string
     const plaintextHex = plaintext.toString(16).padStart(16, '0'); // Ensure it's 8 bytes (16 hex chars)
     // Encrypt the plaintext using AES key
     const { ciphertext, r } = encryptAES(aesKey, plaintextHex);
     const ct = ciphertext + r;
-    const messageHash = ethers.solidityPackedKeccak256(["address", "address", "bytes4", "uint256"], [wallet.address, contractAddress, functionSelector, BigInt("0x" + ct)]);
-    const ctInt = BigInt("0x" + ct);
-    return { ctInt, messageHash };
+    const messageHash = ethers.solidityPackedKeccak256(["address", "address", "bytes4", "uint256"], [signerAddress, contractAddress, functionSelector, BigInt("0x" + ct)]);
+    const encryptedInt = BigInt("0x" + ct);
+    return { encryptedInt, messageHash };
 }
 export function encryptAES(key, plaintext) {
     const blockSize = 16; // 128 bits
