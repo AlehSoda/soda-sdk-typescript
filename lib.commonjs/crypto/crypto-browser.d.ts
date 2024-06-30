@@ -20,5 +20,5 @@ export declare function encryptAES(key: string, plaintext: string): {
     r: string;
 };
 export declare function signRawMessage(message: string | Buffer, walletSigningKey: string): Buffer;
-export declare function decryptRSA(privateKey: any, encryptedData: ArrayBuffer): Promise<ArrayBuffer>;
+export declare function decryptRSA(privateKeyData: ArrayBuffer, encryptedData: ArrayBuffer): Promise<ArrayBuffer>;
 //# sourceMappingURL=crypto-browser.d.ts.map

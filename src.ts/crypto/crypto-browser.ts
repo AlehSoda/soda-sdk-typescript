@@ -136,30 +136,30 @@ export function signRawMessage(message: string | Buffer, walletSigningKey: strin
   return Buffer.concat([ethers.getBytes(sig.r), ethers.getBytes(sig.s), ethers.getBytes(`0x0${sig.v - 27}`)]);
 }
 
-export async function decryptRSA(privateKey: any, encryptedData: ArrayBuffer): Promise<ArrayBuffer> {
-    return await crypto.subtle.decrypt(
+export async function decryptRSA(privateKeyData: ArrayBuffer, encryptedData: ArrayBuffer): Promise<ArrayBuffer> {
+  const importedPrivateKey = await importRSAPrivateKey(privateKeyData);
+
+  return await crypto.subtle.decrypt(
         {
             name: "RSA-OAEP"
         },
-        privateKey,
+        importedPrivateKey,
         encryptedData
     );
 }
 
 
-
-
-// async function importRSAPrivateKey(privateKeyData: ArrayBuffer): Promise<any> {
-//     return await crypto.subtle.importKey(
-//         "pkcs8",
-//         privateKeyData,
-//         {
-//             name: "RSA-OAEP",
-//             hash: { name: "SHA-256" }
-//         },
-//         true,
-//         ["decrypt"]
-//     );
-// }
+async function importRSAPrivateKey(privateKeyData: ArrayBuffer): Promise<any> {
+    return await crypto.subtle.importKey(
+        "pkcs8",
+        privateKeyData,
+        {
+            name: "RSA-OAEP",
+            hash: { name: "SHA-256" }
+        },
+        true,
+        ["decrypt"]
+    );
+}
 
 

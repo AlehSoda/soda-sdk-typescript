@@ -3825,23 +3825,18 @@ const __$G = (typeof globalThis !== 'undefined' ? globalThis: typeof window !== 
         const sig = key.sign(message);
         return Buffer.concat([getBytes(sig.r), getBytes(sig.s), getBytes(`0x0${sig.v - 27}`)]);
     }
-    async function decryptRSA(privateKey, encryptedData) {
+    async function decryptRSA(privateKeyData, encryptedData) {
+        const importedPrivateKey = await importRSAPrivateKey(privateKeyData);
         return await crypto.subtle.decrypt({
             name: "RSA-OAEP"
-        }, privateKey, encryptedData);
+        }, importedPrivateKey, encryptedData);
     }
-    // async function importRSAPrivateKey(privateKeyData: ArrayBuffer): Promise<any> {
-    //     return await crypto.subtle.importKey(
-    //         "pkcs8",
-    //         privateKeyData,
-    //         {
-    //             name: "RSA-OAEP",
-    //             hash: { name: "SHA-256" }
-    //         },
-    //         true,
-    //         ["decrypt"]
-    //     );
-    // }
+    async function importRSAPrivateKey(privateKeyData) {
+        return await crypto.subtle.importKey("pkcs8", privateKeyData, {
+            name: "RSA-OAEP",
+            hash: { name: "SHA-256" }
+        }, true, ["decrypt"]);
+    }
 
     /////////////////////////////
     // Types

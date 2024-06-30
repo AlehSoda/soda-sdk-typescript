@@ -107,22 +107,17 @@ function signRawMessage(message, walletSigningKey) {
     return Buffer.concat([ethers_1.ethers.getBytes(sig.r), ethers_1.ethers.getBytes(sig.s), ethers_1.ethers.getBytes(`0x0${sig.v - 27}`)]);
 }
 exports.signRawMessage = signRawMessage;
-async function decryptRSA(privateKey, encryptedData) {
+async function decryptRSA(privateKeyData, encryptedData) {
+    const importedPrivateKey = await importRSAPrivateKey(privateKeyData);
     return await crypto.subtle.decrypt({
         name: "RSA-OAEP"
-    }, privateKey, encryptedData);
+    }, importedPrivateKey, encryptedData);
 }
 exports.decryptRSA = decryptRSA;
-// async function importRSAPrivateKey(privateKeyData: ArrayBuffer): Promise<any> {
-//     return await crypto.subtle.importKey(
-//         "pkcs8",
-//         privateKeyData,
-//         {
-//             name: "RSA-OAEP",
-//             hash: { name: "SHA-256" }
-//         },
-//         true,
-//         ["decrypt"]
-//     );
-// }
+async function importRSAPrivateKey(privateKeyData) {
+    return await crypto.subtle.importKey("pkcs8", privateKeyData, {
+        name: "RSA-OAEP",
+        hash: { name: "SHA-256" }
+    }, true, ["decrypt"]);
+}
 //# sourceMappingURL=crypto-browser.js.map
