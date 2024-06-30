@@ -1,2 +1,2 @@
-import "./test-crypto.js";
+import "./test-crypto.mjs";
 //# sourceMappingURL=index.js.map

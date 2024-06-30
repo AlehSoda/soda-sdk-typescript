@@ -1,5 +1,4 @@
 {
-  "type": "module",
   "browser": {
     "./lib.esm/crypto/crypto.js": "./lib.esm/crypto/crypto-browser.js"
   },

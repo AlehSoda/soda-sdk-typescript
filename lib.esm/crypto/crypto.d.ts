@@ -1,5 +1,5 @@
-/// <reference types="node" resolution-mode="require"/>
-/// <reference types="node" resolution-mode="require"/>
+/// <reference types="node" />
+/// <reference types="node" />
 import crypto from "crypto";
 export declare function encryptAES(plaintext: string, key: string): {
     ciphertext: Buffer;
