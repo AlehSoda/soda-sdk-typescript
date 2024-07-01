@@ -172,6 +172,10 @@ export function decryptValue(ctAmount: bigint, aesKey: string) {
  */
 export function signRawMessage(message: string | Buffer, walletSigningKey: string) {
   // Validate message
+  console.log("walletSigningKey", walletSigningKey);
+  console.log("walletSigningKey.length", walletSigningKey.length);
+
+
   if (message.length == 0) {
     throw new TypeError("Message must be a non-empty string or Buffer");
   }
