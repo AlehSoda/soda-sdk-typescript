@@ -1,0 +1,7 @@
+{
+  "browser": {
+    "./crypto/crypto.js": "./crypto/crypto-browser.js"
+  },
+  "sideEffects": false,
+  "type": "module"
+}

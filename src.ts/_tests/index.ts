@@ -1,1 +1,1 @@
-import "./test-crypto.mjs";
+import "./test-crypto.js";

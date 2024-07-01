@@ -57,9 +57,9 @@ export declare function decryptValue(ctAmount: bigint, aesKey: string): number;
  * Signs a raw message using the provided wallet signing key.
  *
  * @param {string | Buffer} message - The message to be signed. Must be a non-empty string or Buffer.
- * @param {string} walletSigningKey - The private key used for signing, represented as a 64-character hex string.
+ * @param {string} walletSigningKey - The private key used for signing, represented as a 66-character hex string.
  * @returns {Buffer} - A Buffer containing the concatenated signature components (r, s, and v).
- * @throws {TypeError} - If the message is empty or if the walletSigningKey is not a valid 64-character hex string.
+ * @throws {TypeError} - If the message is empty or if the walletSigningKey is not a valid 66-character hex string.
  */
 export declare function signRawMessage(message: string | Buffer, walletSigningKey: string): Buffer;
 /**
