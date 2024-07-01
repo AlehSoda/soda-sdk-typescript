@@ -24,6 +24,7 @@ import { soda } from "soda-sdk";
 
 ```typescript
 import { soda } from "soda-sdk";
+import { ethers } from "ethers";
 
 const provider =  new ethers.JsonRpcProvider('https://node.sodalabs.net')
 const wallet = ethers.Wallet.createRandom(provider);
