@@ -1,4 +1,4 @@
-# SODA SDK
+# Soda SDK typescript
 
 This SDK provides a suite of cryptographic functions for working with a privacy-oriented blockchain. It supports both Node.js and browser environments and includes utilities for AES encryption/decryption, RSA key generation and decryption, and message signing.
 
@@ -20,7 +20,7 @@ import { soda } from "soda-sdk";
 
 ```
 
-## Onboarding (getting AES user key) example in the browser
+## Onboarding (getting AES user key) example in the browser using devnet
 
 ```typescript
 import { soda } from "soda-sdk";
@@ -50,6 +50,7 @@ console.log("decryptedAesKey:", decryptedAesKey)
 
 ```typescript
 import { soda } from "soda-sdk";
+import { ethers } from "ethers";
 
 const wallet = ethers.Wallet.createRandom(provider);
 const aesKey = new Uint8Array(32);
