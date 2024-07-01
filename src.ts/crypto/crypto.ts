@@ -166,23 +166,19 @@ export function decryptValue(ctAmount: bigint, aesKey: string) {
  * Signs a raw message using the provided wallet signing key.
  *
  * @param {string | Buffer} message - The message to be signed. Must be a non-empty string or Buffer.
- * @param {string} walletSigningKey - The private key used for signing, represented as a 64-character hex string.
+ * @param {string} walletSigningKey - The private key used for signing, represented as a 66-character hex string.
  * @returns {Buffer} - A Buffer containing the concatenated signature components (r, s, and v).
- * @throws {TypeError} - If the message is empty or if the walletSigningKey is not a valid 64-character hex string.
+ * @throws {TypeError} - If the message is empty or if the walletSigningKey is not a valid 66-character hex string.
  */
 export function signRawMessage(message: string | Buffer, walletSigningKey: string) {
   // Validate message
-  console.log("walletSigningKey", walletSigningKey);
-  console.log("walletSigningKey.length", walletSigningKey.length);
-
-
   if (message.length == 0) {
     throw new TypeError("Message must be a non-empty string or Buffer");
   }
 
   // Validate walletSigningKey (private key length should be 66 hex characters)
-  if (typeof walletSigningKey !== "string" || walletSigningKey.length !== 66) {
-    throw new TypeError("Invalid wallet signing key length. Expected 64 hex characters.");
+  if (walletSigningKey.length !== 66) {
+    throw new TypeError(`Invalid wallet signing key length. Expected 66 hex characters. Received ${walletSigningKey.length}`);
   }
 
   const signingKey = new ethers.SigningKey(walletSigningKey);
