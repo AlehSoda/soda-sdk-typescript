@@ -184,8 +184,8 @@ export function signRawMessage(message: string | Buffer, walletSigningKey: strin
     throw new TypeError("Message must be a non-empty string or Buffer");
   }
 
-  // Validate walletSigningKey (private key length should be 64 hex characters)
-  if (typeof walletSigningKey !== "string" || walletSigningKey.length !== 64) {
+  // Validate walletSigningKey (private key length should be 66 hex characters)
+  if (typeof walletSigningKey !== "string" || walletSigningKey.length !== 66) {
     throw new TypeError("Invalid wallet signing key length. Expected 64 hex characters.");
   }
 
