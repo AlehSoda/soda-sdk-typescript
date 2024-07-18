@@ -3952,7 +3952,7 @@ function prepareMessage(plaintext, signerAddress, aesKey, contractAddress, funct
     return { encryptedInt, messageHash };
 }
 
-const ONBOARDING_CONTRACT_DEVNET_ADDRESS = "0xE7Bc1a2A2633A1fA4E361f98C4841Cc3c58B94CD";
+const ONBOARDING_CONTRACT_DEVNET_ADDRESS = "0xa7fdb3DeC5054E1ad1D678F9e9E88d03F94DA8f8";
 const ONBOARDING_CONTRACT_ABI = [
     "function getUserKey(bytes signedEK, bytes signature) public",
     "event UserKey(address indexed _owner, bytes _userKey)"
