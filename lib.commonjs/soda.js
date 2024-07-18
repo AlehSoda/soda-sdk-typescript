@@ -9,7 +9,7 @@ Object.defineProperty(exports, "decryptValue", { enumerable: true, get: function
 Object.defineProperty(exports, "decryptRSA", { enumerable: true, get: function () { return index_js_1.decryptRSA; } });
 Object.defineProperty(exports, "prepareMessage", { enumerable: true, get: function () { return index_js_1.prepareMessage; } });
 Object.defineProperty(exports, "signRawMessage", { enumerable: true, get: function () { return index_js_1.signRawMessage; } });
-exports.ONBOARDING_CONTRACT_DEVNET_ADDRESS = "0xE7Bc1a2A2633A1fA4E361f98C4841Cc3c58B94CD";
+exports.ONBOARDING_CONTRACT_DEVNET_ADDRESS = "0xBaeC693DEE087dD1aD212640897EcD2f6510991f";
 exports.ONBOARDING_CONTRACT_ABI = [
     "function getUserKey(bytes signedEK, bytes signature) public",
     "event UserKey(address indexed _owner, bytes _userKey)"
